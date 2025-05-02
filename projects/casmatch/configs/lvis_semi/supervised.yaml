@@ -1,0 +1,53 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  META_ARCHITECTURE: "TwoStagePseudoLabGeneralizedRCNN"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: False
+  RESNETS:
+    DEPTH: 50
+  PROPOSAL_GENERATOR:
+    NAME: "PseudoLabRPN"
+  RPN:
+    POSITIVE_FRACTION: 0.25
+    POST_NMS_TOPK_TRAIN: 2000
+  ROI_HEADS:
+    NAME: "CascadeEQLv2ROIHeads"
+    NUM_CLASSES: 1203
+    SCORE_THRESH_TEST: 0.001
+    PRIOR_PROB: 0.001
+    EQLv2_GAMMA: 12
+    EQLv2_MU: 0.8
+    EQLv2_ALPHA: 4.0
+    Queue_size: 100
+    Alpha_list: (0.0, 1.0, 2.0)
+  ROI_BOX_HEAD:
+    CLS_AGNOSTIC_BBOX_REG: True
+SOLVER:
+  LR_SCHEDULER_NAME: "WarmupTwoStageMultiStepLR"
+  STEPS: (59999, )
+  FACTOR_LIST: (1, 1)
+  MAX_ITER: 60000
+  IMG_PER_BATCH_LABEL: 8 # 16
+  IMG_PER_BATCH_UNLABEL: 16
+  BASE_LR: 0.01
+  CHECKPOINT_PERIOD: 10000
+DATALOADER:
+  SUP_PERCENT: 100.0
+  NUM_WORKERS: 4
+DATASETS:
+  CROSS_DATASET: True
+  TRAIN_LABEL: ("lvis_v1_train_unlabel_30",)
+  TRAIN_UNLABEL: ("lvis_v1_train_label_70",)
+  TEST: ("lvis_v1_val_filter",)
+SEMISUPNET:
+  Trainer: "ubteacher"
+  BBOX_THRESHOLD: 0.7
+  TEACHER_UPDATE_ITER: 1
+  BURN_UP_STEP: 90001
+  EMA_KEEP_RATE: 0.9996
+  UNSUP_LOSS_WEIGHT: 0.5
+  SUP_LOSS_WEIGHT: 1.0
+TEST:
+  DETECTIONS_PER_IMAGE: 300  # LVIS allows up to 300
+  EVAL_PERIOD: 5000
+OUTPUT_DIR: "./work_dirs/denmark/supervised"
